@@ -1,4 +1,171 @@
-HTMLElement.prototype.wrap=function(r){this.parentNode.insertBefore(r,this),this.parentNode.removeChild(this),r.appendChild(this)},Fluid.events={registerNavbarEvent:function(){var r=jQuery("#navbar");if(r.length!==0){var e=jQuery("#navbar .dropdown-menu");r.offset().top>0&&(r.removeClass("navbar-dark"),e.removeClass("navbar-dark")),Fluid.utils.listenScroll(function(){r[r.offset().top>50?"addClass":"removeClass"]("top-nav-collapse"),e[r.offset().top>50?"addClass":"removeClass"]("dropdown-collapse"),r.offset().top>0?(r.removeClass("navbar-dark"),e.removeClass("navbar-dark")):(r.addClass("navbar-dark"),e.removeClass("navbar-dark"))}),jQuery("#navbar-toggler-btn").on("click",function(){jQuery(".animated-icon").toggleClass("open"),jQuery("#navbar").toggleClass("navbar-col-show")})}},registerParallaxEvent:function(){var r=jQuery('#banner[parallax="true"]');if(r.length!==0){var e=jQuery("#board");if(e.length!==0){var n=function(){var o=jQuery(window).scrollTop()/5,t=parseInt(e.css("margin-top"),10),s=96+t;o>s&&(o=s),r.css({transform:"translate3d(0,"+o+"px,0)"});var a=jQuery(".side-col");a&&a.css({"padding-top":o+"px"})};Fluid.utils.listenScroll(n)}}},registerScrollDownArrowEvent:function(){var r=jQuery(".scroll-down-bar");r.length!==0&&r.on("click",function(){Fluid.utils.scrollToElement("#board",-jQuery("#navbar").height())})},registerScrollTopArrowEvent:function(){var r=jQuery("#scroll-top-button");if(r.length!==0){var e=jQuery("#board");if(e.length!==0){var n=!1,o=!1,t=function(){var a=e[0].getClientRects()[0].right,l=document.body.offsetWidth,i=l-a;n=i>=50,r.css({bottom:n&&o?"20px":"-60px",right:i-64+"px"})};t(),jQuery(window).resize(t);var s=e.offset().top;Fluid.utils.listenScroll(function(){var a=document.body.scrollTop+document.documentElement.scrollTop;o=a>=s,r.css({bottom:n&&o?"20px":"-60px"})}),r.on("click",function(){jQuery("body,html").animate({scrollTop:0,easing:"swing"})})}}},registerImageLoadedEvent:function(){if("NProgress"in window){var r=document.getElementById("banner");if(r){var e=r.style.backgroundImage,n=e.match(/\((.*?)\)/)[1].replace(/(['"])/g,""),o=new Image;o.onload=function(){window.NProgress&&window.NProgress.status!==null&&window.NProgress.inc(.2)},o.src=n,o.complete&&o.onload()}var t=jQuery("main img:not([lazyload])"),s=t.length;for(const a of t){const l=a.onload;a.onload=function(){l&&l(),window.NProgress&&window.NProgress.status!==null&&window.NProgress.inc(.5/s)},a.complete&&a.onload()}}},registerRefreshCallback:function(r){Array.isArray(Fluid.events._refreshCallbacks)||(Fluid.events._refreshCallbacks=[]),Fluid.events._refreshCallbacks.push(r)},refresh:function(){if(Array.isArray(Fluid.events._refreshCallbacks))for(var r of Fluid.events._refreshCallbacks)r instanceof Function&&r()},billboard:function(){"console"in window&&console.log(`
+/* global Fluid */
+
+HTMLElement.prototype.wrap = function(wrapper) {
+  this.parentNode.insertBefore(wrapper, this);
+  this.parentNode.removeChild(this);
+  wrapper.appendChild(this);
+};
+
+Fluid.events = {
+
+  registerNavbarEvent: function() {
+    var navbar = jQuery('#navbar');
+    if (navbar.length === 0) {
+      return;
+    }
+    var submenu = jQuery('#navbar .dropdown-menu');
+    if (navbar.offset().top > 0) {
+      navbar.removeClass('navbar-dark');
+      submenu.removeClass('navbar-dark');
+    }
+    Fluid.utils.listenScroll(function() {
+      navbar[navbar.offset().top > 50 ? 'addClass' : 'removeClass']('top-nav-collapse');
+      submenu[navbar.offset().top > 50 ? 'addClass' : 'removeClass']('dropdown-collapse');
+      if (navbar.offset().top > 0) {
+        navbar.removeClass('navbar-dark');
+        submenu.removeClass('navbar-dark');
+      } else {
+        navbar.addClass('navbar-dark');
+        submenu.removeClass('navbar-dark');
+      }
+    });
+    jQuery('#navbar-toggler-btn').on('click', function() {
+      jQuery('.animated-icon').toggleClass('open');
+      jQuery('#navbar').toggleClass('navbar-col-show');
+    });
+  },
+
+  registerParallaxEvent: function() {
+    var ph = jQuery('#banner[parallax="true"]');
+    if (ph.length === 0) {
+      return;
+    }
+    var board = jQuery('#board');
+    if (board.length === 0) {
+      return;
+    }
+    var parallax = function() {
+      var pxv = jQuery(window).scrollTop() / 5;
+      var offset = parseInt(board.css('margin-top'), 10);
+      var max = 96 + offset;
+      if (pxv > max) {
+        pxv = max;
+      }
+      ph.css({
+        transform: 'translate3d(0,' + pxv + 'px,0)'
+      });
+      var sideCol = jQuery('.side-col');
+      if (sideCol) {
+        sideCol.css({
+          'padding-top': pxv + 'px'
+        });
+      }
+    };
+    Fluid.utils.listenScroll(parallax);
+  },
+
+  registerScrollDownArrowEvent: function() {
+    var scrollbar = jQuery('.scroll-down-bar');
+    if (scrollbar.length === 0) {
+      return;
+    }
+    scrollbar.on('click', function() {
+      Fluid.utils.scrollToElement('#board', -jQuery('#navbar').height());
+    });
+  },
+
+  registerScrollTopArrowEvent: function() {
+    var topArrow = jQuery('#scroll-top-button');
+    if (topArrow.length === 0) {
+      return;
+    }
+    var board = jQuery('#board');
+    if (board.length === 0) {
+      return;
+    }
+    var posDisplay = false;
+    var scrollDisplay = false;
+    // Position
+    var setTopArrowPos = function() {
+      var boardRight = board[0].getClientRects()[0].right;
+      var bodyWidth = document.body.offsetWidth;
+      var right = bodyWidth - boardRight;
+      posDisplay = right >= 50;
+      topArrow.css({
+        'bottom': posDisplay && scrollDisplay ? '20px' : '-60px',
+        'right' : right - 64 + 'px'
+      });
+    };
+    setTopArrowPos();
+    jQuery(window).resize(setTopArrowPos);
+    // Display
+    var headerHeight = board.offset().top;
+    Fluid.utils.listenScroll(function() {
+      var scrollHeight = document.body.scrollTop + document.documentElement.scrollTop;
+      scrollDisplay = scrollHeight >= headerHeight;
+      topArrow.css({
+        'bottom': posDisplay && scrollDisplay ? '20px' : '-60px'
+      });
+    });
+    // Click
+    topArrow.on('click', function() {
+      jQuery('body,html').animate({
+        scrollTop: 0,
+        easing   : 'swing'
+      });
+    });
+  },
+
+  registerImageLoadedEvent: function() {
+    if (!('NProgress' in window)) { return; }
+
+    var bg = document.getElementById('banner');
+    if (bg) {
+      var src = bg.style.backgroundImage;
+      var url = src.match(/\((.*?)\)/)[1].replace(/(['"])/g, '');
+      var img = new Image();
+      img.onload = function() {
+        window.NProgress && window.NProgress.status !== null && window.NProgress.inc(0.2);
+      };
+      img.src = url;
+      if (img.complete) { img.onload(); }
+    }
+
+    var notLazyImages = jQuery('main img:not([lazyload])');
+    var total = notLazyImages.length;
+    for (const img of notLazyImages) {
+      const old = img.onload;
+      img.onload = function() {
+        old && old();
+        window.NProgress && window.NProgress.status !== null && window.NProgress.inc(0.5 / total);
+      };
+      if (img.complete) { img.onload(); }
+    }
+  },
+
+  registerRefreshCallback: function(callback) {
+    if (!Array.isArray(Fluid.events._refreshCallbacks)) {
+      Fluid.events._refreshCallbacks = [];
+    }
+    Fluid.events._refreshCallbacks.push(callback);
+  },
+
+  refresh: function() {
+    if (Array.isArray(Fluid.events._refreshCallbacks)) {
+      for (var callback of Fluid.events._refreshCallbacks) {
+        if (callback instanceof Function) {
+          callback();
+        }
+      }
+    }
+  },
+
+  billboard: function() {
+    if (!('console' in window)) {
+      return;
+    }
+    // eslint-disable-next-line no-console
+    console.log(`
 -------------------------------------------------
 |                                               |
 |      ________  __            _        __      |
@@ -12,4 +179,6 @@ HTMLElement.prototype.wrap=function(r){this.parentNode.insertBefore(r,this),this
 | https://github.com/fluid-dev/hexo-theme-fluid |
 |                                               |
 -------------------------------------------------
-    `)}};
+    `);
+  }
+};

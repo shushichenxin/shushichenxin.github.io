@@ -1,1 +1,245 @@
-window.requestAnimationFrame=window.requestAnimationFrame||window.webkitRequestAnimationFrame||window.mozRequestAnimationFrame,Fluid.utils={listenScroll:function(n){var t=new Debouncer(n);return window.addEventListener("scroll",t,!1),t.handleEvent(),t},unlistenScroll:function(n){window.removeEventListener("scroll",n)},listenDOMLoaded(n){document.readyState!=="loading"?n():document.addEventListener("DOMContentLoaded",function(){n()})},scrollToElement:function(n,t){var e=jQuery(n).offset();e&&jQuery("html,body").animate({scrollTop:e.top+(t||0),easing:"swing"})},elementVisible:function(n,t){t=t&&t>=0?t:0;var e=n.getBoundingClientRect();const i=window.innerHeight||document.documentElement.clientHeight;return e.top>=0&&e.top<=i*(1+t)+e.height/2||e.bottom>=0&&e.bottom<=i*(1+t)+e.height/2},waitElementVisible:function(n,t,e){var i=typeof window<"u",o=i&&!("onscroll"in window)||typeof navigator<"u"&&/(gle|ing|ro|msn)bot|crawl|spider|yand|duckgo/i.test(navigator.userAgent);if(!i||o)return;e=e&&e>=0?e:0;function u(r){Fluid.utils.listenDOMLoaded(function(){if(Fluid.utils.elementVisible(r,e)){t();return}if("IntersectionObserver"in window){var s=new IntersectionObserver(function(l,d){l[0].isIntersecting&&(t(),d.disconnect())},{threshold:[0],rootMargin:(window.innerHeight||document.documentElement.clientHeight)*e+"px"});s.observe(r)}else var a=Fluid.utils.listenScroll(function(){Fluid.utils.elementVisible(r,e)&&(Fluid.utils.unlistenScroll(a),t())})})}typeof n=="string"?this.waitElementLoaded(n,function(r){u(r)}):u(n)},waitElementLoaded:function(n,t){var e=typeof window<"u",i=e&&!("onscroll"in window)||typeof navigator<"u"&&/(gle|ing|ro|msn)bot|crawl|spider|yand|duckgo/i.test(navigator.userAgent);if(!(!e||i))if("MutationObserver"in window){var o=new MutationObserver(function(u,r){var s=document.querySelector(n);s&&(t(s),r.disconnect())});o.observe(document,{childList:!0,subtree:!0})}else Fluid.utils.listenDOMLoaded(function(){var u=function(){var r=document.querySelector(n);r?t(r):setTimeout(u,100)};u()})},createScript:function(n,t){var e=document.createElement("script");e.setAttribute("src",n),e.setAttribute("type","text/javascript"),e.setAttribute("charset","UTF-8"),e.async=!1,typeof t=="function"&&(window.attachEvent?e.onreadystatechange=function(){var u=e.readyState;(u==="loaded"||u==="complete")&&(e.onreadystatechange=null,t())}:e.onload=t);var i=document.getElementsByTagName("script"),o=i.length>0?i[i.length-1]:document.head||document.documentElement;o.parentNode.insertBefore(e,o.nextSibling)},createCssLink:function(n){var t=document.createElement("link");t.setAttribute("rel","stylesheet"),t.setAttribute("type","text/css"),t.setAttribute("href",n);var e=document.getElementsByTagName("link")[0]||document.getElementsByTagName("head")[0]||document.head||document.documentElement;e.parentNode.insertBefore(t,e)},loadComments:function(n,t){var e=document.querySelector("#comments[lazyload]");if(e){var i=function(){t(),e.removeAttribute("lazyload")};Fluid.utils.waitElementVisible(n,i,CONFIG.lazyload.offset_factor)}else t()},getBackgroundLightness(n){var t=n;typeof n=="string"&&(t=document.querySelector(n));var e=t.ownerDocument.defaultView;e||(e=window);var i=e.getComputedStyle(t).backgroundColor.replace(/rgba*\(/,"").replace(")","").split(/,\s*/);if(i.length<3)return 0;var o=.213*i[0]+.715*i[1]+.072*i[2];return o===0||o>255/2?1:-1},retry(n,t,e){if(!(e<=0)){var i=function(){--e>=0&&!n()&&setTimeout(i,t)};setTimeout(i,t)}}};function Debouncer(n){this.callback=n,this.ticking=!1}Debouncer.prototype={constructor:Debouncer,update:function(){this.callback&&this.callback(),this.ticking=!1},requestTick:function(){this.ticking||(requestAnimationFrame(this.rafCallback||(this.rafCallback=this.update.bind(this))),this.ticking=!0)},handleEvent:function(){this.requestTick()}};
+/* global Fluid, CONFIG */
+
+window.requestAnimationFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame;
+
+Fluid.utils = {
+
+  listenScroll: function(callback) {
+    var dbc = new Debouncer(callback);
+    window.addEventListener('scroll', dbc, false);
+    dbc.handleEvent();
+    return dbc;
+  },
+
+  unlistenScroll: function(callback) {
+    window.removeEventListener('scroll', callback);
+  },
+
+  listenDOMLoaded(callback) {
+    if (document.readyState !== 'loading') {
+      callback();
+    } else {
+      document.addEventListener('DOMContentLoaded', function () {
+        callback();
+      });
+    }
+  },
+
+  scrollToElement: function(target, offset) {
+    var of = jQuery(target).offset();
+    if (of) {
+      jQuery('html,body').animate({
+        scrollTop: of.top + (offset || 0),
+        easing   : 'swing'
+      });
+    }
+  },
+
+  elementVisible: function(element, offsetFactor) {
+    offsetFactor = offsetFactor && offsetFactor >= 0 ? offsetFactor : 0;
+    var rect = element.getBoundingClientRect();
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+    return (
+      (rect.top >= 0 && rect.top <= viewportHeight * (1 + offsetFactor) + rect.height / 2) ||
+      (rect.bottom >= 0 && rect.bottom <= viewportHeight * (1 + offsetFactor) + rect.height / 2)
+    );
+  },
+
+  waitElementVisible: function(selectorOrElement, callback, offsetFactor) {
+    var runningOnBrowser = typeof window !== 'undefined';
+    var isBot = (runningOnBrowser && !('onscroll' in window))
+      || (typeof navigator !== 'undefined' && /(gle|ing|ro|msn)bot|crawl|spider|yand|duckgo/i.test(navigator.userAgent));
+    if (!runningOnBrowser || isBot) {
+      return;
+    }
+
+    offsetFactor = offsetFactor && offsetFactor >= 0 ? offsetFactor : 0;
+
+    function waitInViewport(element) {
+      Fluid.utils.listenDOMLoaded(function() {
+        if (Fluid.utils.elementVisible(element, offsetFactor)) {
+          callback();
+          return;
+        }
+        if ('IntersectionObserver' in window) {
+          var io = new IntersectionObserver(function(entries, ob) {
+            if (entries[0].isIntersecting) {
+              callback();
+              ob.disconnect();
+            }
+          }, {
+            threshold : [0],
+            rootMargin: (window.innerHeight || document.documentElement.clientHeight) * offsetFactor + 'px'
+          });
+          io.observe(element);
+        } else {
+          var wrapper = Fluid.utils.listenScroll(function() {
+            if (Fluid.utils.elementVisible(element, offsetFactor)) {
+              Fluid.utils.unlistenScroll(wrapper);
+              callback();
+            }
+          });
+        }
+      });
+    }
+
+    if (typeof selectorOrElement === 'string') {
+      this.waitElementLoaded(selectorOrElement, function(element) {
+        waitInViewport(element);
+      });
+    } else {
+      waitInViewport(selectorOrElement);
+    }
+  },
+
+  waitElementLoaded: function(selector, callback) {
+    var runningOnBrowser = typeof window !== 'undefined';
+    var isBot = (runningOnBrowser && !('onscroll' in window))
+      || (typeof navigator !== 'undefined' && /(gle|ing|ro|msn)bot|crawl|spider|yand|duckgo/i.test(navigator.userAgent));
+    if (!runningOnBrowser || isBot) {
+      return;
+    }
+
+    if ('MutationObserver' in window) {
+      var mo = new MutationObserver(function(records, ob) {
+        var ele = document.querySelector(selector);
+        if (ele) {
+          callback(ele);
+          ob.disconnect();
+        }
+      });
+      mo.observe(document, { childList: true, subtree: true });
+    } else {
+      Fluid.utils.listenDOMLoaded(function() {
+        var waitLoop = function() {
+          var ele = document.querySelector(selector);
+          if (ele) {
+            callback(ele);
+          } else {
+            setTimeout(waitLoop, 100);
+          }
+        };
+        waitLoop();
+      });
+    }
+  },
+
+  createScript: function(url, onload) {
+    var s = document.createElement('script');
+    s.setAttribute('src', url);
+    s.setAttribute('type', 'text/javascript');
+    s.setAttribute('charset', 'UTF-8');
+    s.async = false;
+    if (typeof onload === 'function') {
+      if (window.attachEvent) {
+        s.onreadystatechange = function() {
+          var e = s.readyState;
+          if (e === 'loaded' || e === 'complete') {
+            s.onreadystatechange = null;
+            onload();
+          }
+        };
+      } else {
+        s.onload = onload;
+      }
+    }
+    var ss = document.getElementsByTagName('script');
+    var e = ss.length > 0 ? ss[ss.length - 1] : document.head || document.documentElement;
+    e.parentNode.insertBefore(s, e.nextSibling);
+  },
+
+  createCssLink: function(url) {
+    var l = document.createElement('link');
+    l.setAttribute('rel', 'stylesheet');
+    l.setAttribute('type', 'text/css');
+    l.setAttribute('href', url);
+    var e = document.getElementsByTagName('link')[0]
+      || document.getElementsByTagName('head')[0]
+      || document.head || document.documentElement;
+    e.parentNode.insertBefore(l, e);
+  },
+
+  loadComments: function(selector, loadFunc) {
+    var ele = document.querySelector('#comments[lazyload]');
+    if (ele) {
+      var callback = function() {
+        loadFunc();
+        ele.removeAttribute('lazyload');
+      };
+      Fluid.utils.waitElementVisible(selector, callback, CONFIG.lazyload.offset_factor);
+    } else {
+      loadFunc();
+    }
+  },
+
+  getBackgroundLightness(selectorOrElement) {
+    var ele = selectorOrElement;
+    if (typeof selectorOrElement === 'string') {
+      ele = document.querySelector(selectorOrElement);
+    }
+    var view = ele.ownerDocument.defaultView;
+    if (!view) {
+      view = window;
+    }
+    var rgbArr = view.getComputedStyle(ele).backgroundColor.replace(/rgba*\(/, '').replace(')', '').split(/,\s*/);
+    if (rgbArr.length < 3) {
+      return 0;
+    }
+    var colorCast = (0.213 * rgbArr[0]) + (0.715 * rgbArr[1]) + (0.072 * rgbArr[2]);
+    return colorCast === 0 || colorCast > 255 / 2 ? 1 : -1;
+  },
+
+  retry(handler, interval, times) {
+    if (times <= 0) {
+      return;
+    }
+    var next = function() {
+      if (--times >= 0 && !handler()) {
+        setTimeout(next, interval);
+      }
+    };
+    setTimeout(next, interval);
+  }
+
+};
+
+/**
+ * Handles debouncing of events via requestAnimationFrame
+ * @see http://www.html5rocks.com/en/tutorials/speed/animations/
+ * @param {Function} callback The callback to handle whichever event
+ */
+function Debouncer(callback) {
+  this.callback = callback;
+  this.ticking = false;
+}
+
+Debouncer.prototype = {
+  constructor: Debouncer,
+
+  /**
+   * dispatches the event to the supplied callback
+   * @private
+   */
+  update: function() {
+    this.callback && this.callback();
+    this.ticking = false;
+  },
+
+  /**
+   * ensures events don't get stacked
+   * @private
+   */
+  requestTick: function() {
+    if (!this.ticking) {
+      requestAnimationFrame(this.rafCallback || (this.rafCallback = this.update.bind(this)));
+      this.ticking = true;
+    }
+  },
+
+  /**
+   * Attach this as the event listeners
+   */
+  handleEvent: function() {
+    this.requestTick();
+  }
+};

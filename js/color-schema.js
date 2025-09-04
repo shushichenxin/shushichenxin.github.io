@@ -1,1 +1,286 @@
-(function(i,a){var f=a.documentElement,d="Fluid_Color_Scheme",A="--color-mode",S="data-user-color-scheme",p="data-default-color-scheme",C="#color-toggle-btn",u="#color-toggle-icon",k="iframe";function L(e,t){try{localStorage.setItem(e,t)}catch{}}function E(e){try{localStorage.removeItem(e)}catch{}}function v(e){try{return localStorage.getItem(e)}catch{return null}}function q(){var e=f.getAttribute(p);return typeof e=="string"?e.replace(/["'\s]/g,""):null}function b(){var e=getComputedStyle(f).getPropertyValue(A);return typeof e=="string"?e.replace(/["'\s]/g,""):null}function y(){f.setAttribute(S,h()),E(d)}var c={dark:!0,light:!0};function h(){var e=q();if(c[e]||(e=b(),c[e]))return e;var t=new Date().getHours();return t>=18||t>=0&&t<=6?"dark":"light"}function m(e){var t=e||v(d)||h();if(t===h())y();else if(c[t])f.setAttribute(S,t);else{y();return}T(t),F(t),M(t)}var n={dark:"light",light:"dark"};function g(e){return"icon-"+e}function I(){var e=v(d);if(c[e])e=n[e];else if(e===null){var t=a.querySelector(u);t&&(e=t.getAttribute("data")),(!t||!c[e])&&(e=n[b()])}else return;return L(d,e),e}function T(e){if(c[e]){var t=g("dark");e&&(t=g(e));var r=a.querySelector(u);if(r?(r.setAttribute("class","iconfont "+t),r.setAttribute("data",n[e])):Fluid.utils.waitElementLoaded(u,function(){var l=a.querySelector(u);l&&(l.setAttribute("class","iconfont "+t),l.setAttribute("data",n[e]))}),a.documentElement.getAttribute("data-user-color-scheme")){var o=getComputedStyle(a.documentElement).getPropertyValue("--navbar-bg-color").trim();a.querySelector('meta[name="theme-color"]').setAttribute("content",o)}}}function F(e){var t=a.getElementById("highlight-css"),r=a.getElementById("highlight-css-dark");e==="dark"?(r&&r.removeAttribute("disabled"),t&&t.setAttribute("disabled","")):(t&&t.removeAttribute("disabled"),r&&r.setAttribute("disabled","")),setTimeout(function(){a.querySelectorAll(".markdown-body pre").forEach(o=>{var l=Fluid.utils.getBackgroundLightness(o)>=0?"code-widget-light":"code-widget-dark",s=o.querySelector(".code-widget-light, .code-widget-dark");s&&(s.classList.remove("code-widget-light","code-widget-dark"),s.classList.add(l))})},200)}function M(e){i.REMARK42&&i.REMARK42.changeTheme(e),i.CUSDIS&&i.CUSDIS.setTheme(e);var t=a.querySelector(".utterances-frame");if(t){var r=e==="dark"?i.UtterancesThemeDark:i.UtterancesThemeLight;const s={type:"set-theme",theme:r};t.contentWindow.postMessage(s,"https://utteranc.es")}var o=a.querySelector("iframe.giscus-frame");if(o){var l=e==="dark"?i.GiscusThemeDark:i.GiscusThemeLight;const s={setConfig:{theme:l}};o.contentWindow.postMessage({giscus:s},"https://giscus.app")}}m(),Fluid.utils.waitElementLoaded(u,function(){m();var e=a.querySelector(C);if(e){e.addEventListener("click",function(){m(I())});var t=a.querySelector(u);t&&(e.addEventListener("mouseenter",function(){var r=t.getAttribute("data");t.classList.replace(g(n[r]),g(r))}),e.addEventListener("mouseleave",function(){var r=t.getAttribute("data");t.classList.replace(g(r),g(n[r]))}))}}),Fluid.utils.waitElementLoaded(k,function(){m()})})(window,document);
+/* global Fluid */
+
+/**
+ * Modified from https://blog.skk.moe/post/hello-darkmode-my-old-friend/
+ */
+(function(window, document) {
+  var rootElement = document.documentElement;
+  var colorSchemaStorageKey = 'Fluid_Color_Scheme';
+  var colorSchemaMediaQueryKey = '--color-mode';
+  var userColorSchemaAttributeName = 'data-user-color-scheme';
+  var defaultColorSchemaAttributeName = 'data-default-color-scheme';
+  var colorToggleButtonSelector = '#color-toggle-btn';
+  var colorToggleIconSelector = '#color-toggle-icon';
+  var iframeSelector = 'iframe';
+
+  function setLS(k, v) {
+    try {
+      localStorage.setItem(k, v);
+    } catch (e) {}
+  }
+
+  function removeLS(k) {
+    try {
+      localStorage.removeItem(k);
+    } catch (e) {}
+  }
+
+  function getLS(k) {
+    try {
+      return localStorage.getItem(k);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function getSchemaFromHTML() {
+    var res = rootElement.getAttribute(defaultColorSchemaAttributeName);
+    if (typeof res === 'string') {
+      return res.replace(/["'\s]/g, '');
+    }
+    return null;
+  }
+
+  function getSchemaFromCSSMediaQuery() {
+    var res = getComputedStyle(rootElement).getPropertyValue(
+      colorSchemaMediaQueryKey
+    );
+    if (typeof res === 'string') {
+      return res.replace(/["'\s]/g, '');
+    }
+    return null;
+  }
+
+  function resetSchemaAttributeAndLS() {
+    rootElement.setAttribute(userColorSchemaAttributeName, getDefaultColorSchema());
+    removeLS(colorSchemaStorageKey);
+  }
+
+  var validColorSchemaKeys = {
+    dark : true,
+    light: true
+  };
+
+  function getDefaultColorSchema() {
+    // 取默认字段的值
+    var schema = getSchemaFromHTML();
+    // 如果明确指定了 schema 则返回
+    if (validColorSchemaKeys[schema]) {
+      return schema;
+    }
+    // 默认优先按 prefers-color-scheme
+    schema = getSchemaFromCSSMediaQuery();
+    if (validColorSchemaKeys[schema]) {
+      return schema;
+    }
+    // 否则按本地时间是否大于 18 点或凌晨 0 ~ 6 点
+    var hours = new Date().getHours();
+    if (hours >= 18 || (hours >= 0 && hours <= 6)) {
+      return 'dark';
+    }
+    return 'light';
+  }
+
+  function applyCustomColorSchemaSettings(schema) {
+    // 接受从「开关」处传来的模式，或者从 localStorage 读取，否则按默认设置值
+    var current = schema || getLS(colorSchemaStorageKey) || getDefaultColorSchema();
+
+    if (current === getDefaultColorSchema()) {
+      // 当用户切换的显示模式和默认模式相同时，则恢复为自动模式
+      resetSchemaAttributeAndLS();
+    } else if (validColorSchemaKeys[current]) {
+      rootElement.setAttribute(
+        userColorSchemaAttributeName,
+        current
+      );
+    } else {
+      // 特殊情况重置
+      resetSchemaAttributeAndLS();
+      return;
+    }
+
+    // 根据当前模式设置图标
+    setButtonIcon(current);
+
+    // 设置代码高亮
+    setHighlightCSS(current);
+
+    // 设置其他应用
+    setApplications(current);
+  }
+
+  var invertColorSchemaObj = {
+    dark : 'light',
+    light: 'dark'
+  };
+
+  function getIconClass(scheme) {
+    return 'icon-' + scheme;
+  }
+
+  function toggleCustomColorSchema() {
+    var currentSetting = getLS(colorSchemaStorageKey);
+
+    if (validColorSchemaKeys[currentSetting]) {
+      // 从 localStorage 中读取模式，并取相反的模式
+      currentSetting = invertColorSchemaObj[currentSetting];
+    } else if (currentSetting === null) {
+      // 当 localStorage 中没有相关值，或者 localStorage 抛了 Error
+      // 先按照按钮的状态进行切换
+      var iconElement = document.querySelector(colorToggleIconSelector);
+      if (iconElement) {
+        currentSetting = iconElement.getAttribute('data');
+      }
+      if (!iconElement || !validColorSchemaKeys[currentSetting]) {
+        // 当 localStorage 中没有相关值，或者 localStorage 抛了 Error，则读取默认值并切换到相反的模式
+        currentSetting = invertColorSchemaObj[getSchemaFromCSSMediaQuery()];
+      }
+    } else {
+      return;
+    }
+    // 将相反的模式写入 localStorage
+    setLS(colorSchemaStorageKey, currentSetting);
+
+    return currentSetting;
+  }
+
+  function setButtonIcon(schema) {
+    if (validColorSchemaKeys[schema]) {
+      // 切换图标
+      var icon = getIconClass('dark');
+      if (schema) {
+        icon = getIconClass(schema);
+      }
+      var iconElement = document.querySelector(colorToggleIconSelector);
+      if (iconElement) {
+        iconElement.setAttribute(
+          'class',
+          'iconfont ' + icon
+        );
+        iconElement.setAttribute(
+          'data',
+          invertColorSchemaObj[schema]
+        );
+      } else {
+        // 如果图标不存在则说明图标还没加载出来，等到页面全部加载再尝试切换
+        Fluid.utils.waitElementLoaded(colorToggleIconSelector, function() {
+          var iconElement = document.querySelector(colorToggleIconSelector);
+          if (iconElement) {
+            iconElement.setAttribute(
+              'class',
+              'iconfont ' + icon
+            );
+            iconElement.setAttribute(
+              'data',
+              invertColorSchemaObj[schema]
+            );
+          }
+        });
+      }
+      if (document.documentElement.getAttribute('data-user-color-scheme')) {
+        var color = getComputedStyle(document.documentElement).getPropertyValue('--navbar-bg-color').trim()
+        document.querySelector('meta[name="theme-color"]').setAttribute('content', color)
+      }
+    }
+  }
+
+  function setHighlightCSS(schema) {
+    // 启用对应的代码高亮的样式
+    var lightCss = document.getElementById('highlight-css');
+    var darkCss = document.getElementById('highlight-css-dark');
+    if (schema === 'dark') {
+      if (darkCss) {
+        darkCss.removeAttribute('disabled');
+      }
+      if (lightCss) {
+        lightCss.setAttribute('disabled', '');
+      }
+    } else {
+      if (lightCss) {
+        lightCss.removeAttribute('disabled');
+      }
+      if (darkCss) {
+        darkCss.setAttribute('disabled', '');
+      }
+    }
+
+    setTimeout(function() {
+      // 设置代码块组件样式
+      document.querySelectorAll('.markdown-body pre').forEach((pre) => {
+        var cls = Fluid.utils.getBackgroundLightness(pre) >= 0 ? 'code-widget-light' : 'code-widget-dark';
+        var widget = pre.querySelector('.code-widget-light, .code-widget-dark');
+        if (widget) {
+          widget.classList.remove('code-widget-light', 'code-widget-dark');
+          widget.classList.add(cls);
+        }
+      });
+    }, 200);
+  }
+
+  function setApplications(schema) {
+    // 设置 remark42 评论主题
+    if (window.REMARK42) {
+      window.REMARK42.changeTheme(schema);
+    }
+
+    // 设置 cusdis 评论主题
+    if (window.CUSDIS) {
+      window.CUSDIS.setTheme(schema);
+    }
+
+    // 设置 utterances 评论主题
+    var utterances = document.querySelector('.utterances-frame');
+    if (utterances) {
+      var utterancesTheme = schema === 'dark' ? window.UtterancesThemeDark : window.UtterancesThemeLight;
+      const message = {
+        type : 'set-theme',
+        theme: utterancesTheme
+      };
+      utterances.contentWindow.postMessage(message, 'https://utteranc.es');
+    }
+
+    // 设置 giscus 评论主题
+    var giscus = document.querySelector('iframe.giscus-frame');
+    if (giscus) {
+      var giscusTheme = schema === 'dark' ? window.GiscusThemeDark : window.GiscusThemeLight;
+      const message = {
+        setConfig: {
+          theme: giscusTheme,
+        }
+      };
+      // giscus.style.cssText += 'color-scheme: normal;';
+      giscus.contentWindow.postMessage({ 'giscus': message }, 'https://giscus.app');
+    }
+  }
+
+  // 当页面加载时，将显示模式设置为 localStorage 中自定义的值（如果有的话）
+  applyCustomColorSchemaSettings();
+
+  Fluid.utils.waitElementLoaded(colorToggleIconSelector, function() {
+    applyCustomColorSchemaSettings();
+    var button = document.querySelector(colorToggleButtonSelector);
+    if (button) {
+      // 当用户点击切换按钮时，获得新的显示模式、写入 localStorage、并在页面上生效
+      button.addEventListener('click', function() {
+        applyCustomColorSchemaSettings(toggleCustomColorSchema());
+      });
+      var icon = document.querySelector(colorToggleIconSelector);
+      if (icon) {
+        // 光标悬停在按钮上时，切换图标
+        button.addEventListener('mouseenter', function() {
+          var current = icon.getAttribute('data');
+          icon.classList.replace(getIconClass(invertColorSchemaObj[current]), getIconClass(current));
+        });
+        button.addEventListener('mouseleave', function() {
+          var current = icon.getAttribute('data');
+          icon.classList.replace(getIconClass(current), getIconClass(invertColorSchemaObj[current]));
+        });
+      }
+    }
+  });
+
+  Fluid.utils.waitElementLoaded(iframeSelector, function() {
+    applyCustomColorSchemaSettings();
+  });
+  
+})(window, document);

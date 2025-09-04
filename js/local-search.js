@@ -1,1 +1,159 @@
-(function(){function Q(l,v,s){"use strict";var e=jQuery(v),t=jQuery(s);if(e.length===0)throw Error("No element selected by the searchSelector");if(t.length===0)throw Error("No element selected by the resultSelector");t.attr("class").indexOf("list-group-item")===-1&&t.html('<div class="m-auto text-center"><div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div><br/>Loading...</div>'),jQuery.ajax({url:l,dataType:"xml",success:function(E){var L=jQuery("entry",E).map(function(){return{title:jQuery("title",this).text(),content:jQuery("content",this).text(),url:jQuery("url",this).text()}}).get();t.html().indexOf("list-group-item")===-1&&t.html(""),e.on("input",function(){var x=e.val(),n="",C=x.trim().toLowerCase().split(/[\s-]+/);if(t.html(""),x.trim().length<=0)return e.removeClass("invalid").removeClass("valid");if(L.forEach(function(r){var f=!0;(!r.title||r.title.trim()==="")&&(r.title="Untitled");var j=r.title.trim(),O=j.toLowerCase(),_=r.content.trim().replace(/<[^>]+>/g,""),b=_.toLowerCase(),N=r.url,w=-1,i=-1,o=-1;if(CONFIG.include_content_in_search&&b===""?f=!1:C.forEach(function(a,p){w=O.indexOf(a),i=b.indexOf(a),w<0&&i<0?f=!1:(i<0&&(i=0),p===0&&(o=i))}),f){n+="<a href='"+N+"' class='list-group-item list-group-item-action font-weight-bolder search-list-title'>"+j+"</a>";var d=_;if(o>=0){var c=o-20,u=o+80;c<0&&(c=0),c===0&&(u=100),u>d.length&&(u=d.length);var m=d.substring(c,u);C.forEach(function(a){var p=new RegExp(a,"gi");m=m.replace(p,'<span class="search-word">'+a+"</span>")}),n+="<p class='search-list-content'>"+m+"...</p>"}}}),n.indexOf("list-group-item")===-1)return e.addClass("invalid").removeClass("valid");e.addClass("valid").removeClass("invalid"),t.html(n)})}})}function S(l,v){"use strict";var s=jQuery(l),e=jQuery(v);if(s.length===0)throw Error("No element selected by the searchSelector");if(e.length===0)throw Error("No element selected by the resultSelector");s.val("").removeClass("invalid").removeClass("valid"),e.html("")}var h=jQuery("#modalSearch"),g="#local-search-input",y="#local-search-result";h.on("show.bs.modal",function(){var l=CONFIG.search_path||"/local-search.xml";Q(l,g,y)}),h.on("shown.bs.modal",function(){jQuery("#local-search-input").focus()}),h.on("hidden.bs.modal",function(){S(g,y)})})();
+/* global CONFIG */
+
+(function() {
+  // Modified from [hexo-generator-search](https://github.com/wzpan/hexo-generator-search)
+  function localSearchFunc(path, searchSelector, resultSelector) {
+    'use strict';
+    // 0x00. environment initialization
+    var $input = jQuery(searchSelector);
+    var $result = jQuery(resultSelector);
+
+    if ($input.length === 0) {
+      // eslint-disable-next-line no-console
+      throw Error('No element selected by the searchSelector');
+    }
+    if ($result.length === 0) {
+      // eslint-disable-next-line no-console
+      throw Error('No element selected by the resultSelector');
+    }
+
+    if ($result.attr('class').indexOf('list-group-item') === -1) {
+      $result.html('<div class="m-auto text-center"><div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div><br/>Loading...</div>');
+    }
+
+    jQuery.ajax({
+      // 0x01. load xml file
+      url     : path,
+      dataType: 'xml',
+      success : function(xmlResponse) {
+        // 0x02. parse xml file
+        var dataList = jQuery('entry', xmlResponse).map(function() {
+          return {
+            title  : jQuery('title', this).text(),
+            content: jQuery('content', this).text(),
+            url    : jQuery('url', this).text()
+          };
+        }).get();
+
+        if ($result.html().indexOf('list-group-item') === -1) {
+          $result.html('');
+        }
+
+        $input.on('input', function() {
+          // 0x03. parse query to keywords list
+          var content = $input.val();
+          var resultHTML = '';
+          var keywords = content.trim().toLowerCase().split(/[\s-]+/);
+          $result.html('');
+          if (content.trim().length <= 0) {
+            return $input.removeClass('invalid').removeClass('valid');
+          }
+          // 0x04. perform local searching
+          dataList.forEach(function(data) {
+            var isMatch = true;
+            if (!data.title || data.title.trim() === '') {
+              data.title = 'Untitled';
+            }
+            var orig_data_title = data.title.trim();
+            var data_title = orig_data_title.toLowerCase();
+            var orig_data_content = data.content.trim().replace(/<[^>]+>/g, '');
+            var data_content = orig_data_content.toLowerCase();
+            var data_url = data.url;
+            var index_title = -1;
+            var index_content = -1;
+            var first_occur = -1;
+            // Skip matching when content is included in search and content is empty
+            if (CONFIG.include_content_in_search && data_content === '') {
+              isMatch = false;
+            } else {
+              keywords.forEach(function (keyword, i) {
+                index_title = data_title.indexOf(keyword);
+                index_content = data_content.indexOf(keyword);
+
+                if (index_title < 0 && index_content < 0) {
+                  isMatch = false;
+                } else {
+                  if (index_content < 0) {
+                    index_content = 0;
+                  }
+                  if (i === 0) {
+                    first_occur = index_content;
+                  }
+                }
+              });
+            }
+            // 0x05. show search results
+            if (isMatch) {
+              resultHTML += '<a href=\'' + data_url + '\' class=\'list-group-item list-group-item-action font-weight-bolder search-list-title\'>' + orig_data_title + '</a>';
+              var content = orig_data_content;
+              if (first_occur >= 0) {
+                // cut out 100 characters
+                var start = first_occur - 20;
+                var end = first_occur + 80;
+
+                if (start < 0) {
+                  start = 0;
+                }
+
+                if (start === 0) {
+                  end = 100;
+                }
+
+                if (end > content.length) {
+                  end = content.length;
+                }
+
+                var match_content = content.substring(start, end);
+
+                // highlight all keywords
+                keywords.forEach(function(keyword) {
+                  var regS = new RegExp(keyword, 'gi');
+                  match_content = match_content.replace(regS, '<span class="search-word">' + keyword + '</span>');
+                });
+
+                resultHTML += '<p class=\'search-list-content\'>' + match_content + '...</p>';
+              }
+            }
+          });
+          if (resultHTML.indexOf('list-group-item') === -1) {
+            return $input.addClass('invalid').removeClass('valid');
+          }
+          $input.addClass('valid').removeClass('invalid');
+          $result.html(resultHTML);
+        });
+      }
+    });
+  }
+
+  function localSearchReset(searchSelector, resultSelector) {
+    'use strict';
+    var $input = jQuery(searchSelector);
+    var $result = jQuery(resultSelector);
+
+    if ($input.length === 0) {
+      // eslint-disable-next-line no-console
+      throw Error('No element selected by the searchSelector');
+    }
+    if ($result.length === 0) {
+      // eslint-disable-next-line no-console
+      throw Error('No element selected by the resultSelector');
+    }
+
+    $input.val('').removeClass('invalid').removeClass('valid');
+    $result.html('');
+  }
+
+  var modal = jQuery('#modalSearch');
+  var searchSelector = '#local-search-input';
+  var resultSelector = '#local-search-result';
+  modal.on('show.bs.modal', function() {
+    var path = CONFIG.search_path || '/local-search.xml';
+    localSearchFunc(path, searchSelector, resultSelector);
+  });
+  modal.on('shown.bs.modal', function() {
+    jQuery('#local-search-input').focus();
+  });
+  modal.on('hidden.bs.modal', function() {
+    localSearchReset(searchSelector, resultSelector);
+  });
+})();
