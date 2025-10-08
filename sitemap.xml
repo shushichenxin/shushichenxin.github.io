@@ -2,9 +2,9 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
-    <loc>https://www.shushichenxin.com/2025/08/02/hello-world/</loc>
+    <loc>https://www.shushichenxin.com/2025/10/07/saligia_beta/</loc>
     
-    <lastmod>2025-08-25</lastmod>
+    <lastmod>2025-10-08</lastmod>
     
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
@@ -13,7 +13,16 @@
   <url>
     <loc>https://www.shushichenxin.com/about/</loc>
     
-    <lastmod>2025-08-02</lastmod>
+    <lastmod>2025-10-08</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.shushichenxin.com/2025/08/02/hello-world/</loc>
+    
+    <lastmod>2025-08-25</lastmod>
     
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
@@ -22,11 +31,18 @@
 
   <url>
     <loc>https://www.shushichenxin.com/</loc>
-    <lastmod>2025-09-13</lastmod>
+    <lastmod>2025-10-08</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
 
+  
+  <url>
+    <loc>https://www.shushichenxin.com/tags/SALIGIA%E6%B5%8B%E8%AF%95%E7%89%88/</loc>
+    <lastmod>2025-10-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
   
 
   
